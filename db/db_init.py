@@ -34,6 +34,12 @@ def init_db(db_path:str):
         ('note', 'note', 'Secure Notes');
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS vault_meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );
+    """)
 
     conn.commit()
     conn.close()
