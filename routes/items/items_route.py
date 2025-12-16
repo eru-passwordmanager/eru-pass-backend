@@ -62,3 +62,59 @@ def create_item():
         return jsonify({"message":str(err)}), 400
     finally:
         conn.close()
+
+@items_bp.route("/", methods=["GET"])
+def list_items():
+    # Vault locked or unlocked ?
+    key, err = get_unlocked_key_or_401()
+    if err:
+        msg, code = err
+        return jsonify({"error": msg}), code
+    
+    conn = get_conn(current_app.config["VAULT_DB_PATH"])
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+                SELECT id, type, title, encrypted_data, created_at, updated_at
+                FROM vault_items
+                ORDER BY updated_at DESC
+            """
+        )
+        rows = cursor.fetchall()
+
+        items = []
+
+        for row in rows:
+            try:
+                # decrypt
+                plaintext = CryptoService.decrypt_from_string(
+                    key,
+                    row["encrypted_data"],
+                    aad=f"item:{row['type']}".encode("utf-8") # integrity guard
+                )
+
+                payload = json.loads(plaintext.decode("utf-8"))
+
+                items.append({
+                    "id":row["id"],
+                    "type":row["type"],
+                    "title":row["title"],
+                    "payload":payload,
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
+                })
+
+            except Exception:
+                items.append({
+                    "id":row["id"],
+                    "type": row["type"],
+                    "title": row["title"],
+                    "error": "decrypt_failed"
+                })
+
+        return jsonify(items)
+
+    finally:
+        conn.close()
