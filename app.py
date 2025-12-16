@@ -23,7 +23,9 @@ def create_app():
 
     from routes.health import health_bp
     from routes.vault_routes import vault_bp
+    from routes.items.items_route import items_bp
     app.register_blueprint(health_bp)
     app.register_blueprint(vault_bp)
+    app.register_blueprint(items_bp)
 
     return app
