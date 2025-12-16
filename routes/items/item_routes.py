@@ -165,3 +165,74 @@ def get_item(item_id):
         return jsonify({"error":"Failed to decrypt item"}), 500
     finally:
         conn.close()
+
+@items_bp.route("/update/<item_id>", methods=["PUT"])
+def update_item(item_id):
+    key, err = get_unlocked_key_or_401()
+    if err:
+        msg, code = err
+        return jsonify({"error": msg}), code
+    
+    body = request.get_json(silent=True) or {}
+    new_title = body.get("title")
+    new_payload = body.get("payload")
+
+    if not isinstance(new_payload, dict):
+        return jsonify({"error":"payload required"}), 400
+    
+    conn = get_conn(current_app.config["VAULT_DB_PATH"])
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, type, title, encrypted_data
+            FROM vault_items
+            WHERE id= ?
+            """,
+            (item_id,),
+        )
+        row = cursor.fetchone()
+
+        if row is None:
+            return jsonify({"error":"Item not found"}), 404
+        
+        item_type = row["type"]
+
+        # decrypt old data for confirmation
+        try:
+            _ = CryptoService.decrypt_from_string(
+                key,
+                row["encrypted_data"],
+                aad=f"item:{item_type}".encode("utf-8")
+            )
+        except Exception:
+            return jsonify({"error":"Failed to decrypt existing item"}), 500
+        
+        # new payload
+        plaintext = json.dumps(new_payload).encode("utf-8")
+
+        new_encrypted = CryptoService.encrypt_to_string(
+            key,
+            plaintext,
+            aad=f"item:{item_type}".encode("utf-8")
+        )
+
+        now = int(time.time())
+        cursor.execute(
+            """
+            UPDATE vault_items
+            SET title = ?, encrypted_data = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                new_title if new_title is not None else row["title"],
+                new_encrypted,
+                now,
+                item_id,
+            ),
+        )
+        conn.commit()
+        return jsonify({"ok":True})
+    finally:
+        conn.close()
