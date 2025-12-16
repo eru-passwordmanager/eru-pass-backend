@@ -121,6 +121,7 @@ def list_items():
 
 @items_bp.route("/<item_id>", methods=["GET"])
 def get_item(item_id):
+    # Vault locked or unlocked ?
     key, err = get_unlocked_key_or_401()
     if err:
         msg, code = err
@@ -168,6 +169,7 @@ def get_item(item_id):
 
 @items_bp.route("/update/<item_id>", methods=["PUT"])
 def update_item(item_id):
+    # # Vault locked or unlocked ?
     key, err = get_unlocked_key_or_401()
     if err:
         msg, code = err
@@ -233,6 +235,40 @@ def update_item(item_id):
             ),
         )
         conn.commit()
+        return jsonify({"ok":True})
+    finally:
+        conn.close()
+
+@items_bp.route("/delete/<item_id>", methods=["DELETE"])
+def delete_item(item_id):
+    # Vault locked or unlocked ?
+    key, err = get_unlocked_key_or_401()
+    if err:
+        msg, code = err
+        return jsonify({"error": msg}), code
+    
+    conn = get_conn(current_app.config["VAULT_DB_PATH"])
+
+    try:
+        cursor = conn.cursor()
+
+        # Item exist ?
+        cursor.execute(
+            "SELECT id FROM vault_items WHERE id = ?",
+            (item_id,),
+        )
+        
+        row = cursor.fetchone()
+
+        if row is None:
+            return jsonify({"error": "Item not found"}), 404
+
+        cursor.execute(
+            "DELETE FROM vault_items WHERE id = ?",
+            (item_id,),
+        )
+        conn.commit()
+
         return jsonify({"ok":True})
     finally:
         conn.close()
