@@ -118,3 +118,50 @@ def list_items():
 
     finally:
         conn.close()
+
+@items_bp.route("/<item_id>", methods=["GET"])
+def get_item(item_id):
+    key, err = get_unlocked_key_or_401()
+    if err:
+        msg, code = err
+        return jsonify({"error": msg}), code
+    
+    conn = get_conn(current_app.config["VAULT_DB_PATH"])
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+                SELECT id,type, title, encrypted_data, created_at, updated_at
+                FROM vault_items
+                WHERE id = ?
+            """,
+            (item_id,),
+        )
+
+        row = cursor.fetchone()
+
+        if row is None:
+            return jsonify({"error": "Item not found"}), 404
+        
+        plaintext = CryptoService.decrypt_from_string(
+            key,
+            row["encrypted_data"],
+            aad=f"item:{row['type']}".encode("utf-8") # integrity
+        )
+
+        payload = json.loads(plaintext.decode("utf-8"))
+
+        return jsonify({
+            "id":row["id"],
+            "type":row["type"],
+            "title":row["title"],
+            "payload":payload,
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+        })
+
+    except Exception:
+        return jsonify({"error":"Failed to decrypt item"}), 500
+    finally:
+        conn.close()
