@@ -5,7 +5,7 @@ from db.connection import get_conn
 from db.vault_meta_repo import meta_get, meta_set
 from services.crypto.crypto_service import CryptoService, KdfParams, b64e, b64d
 from services.vault.unlock_store import VaultService
-from services.vault.auth import get_unlocked_key_or_401
+from services.vault.auth import get_unlocked_key_or_401, get_bearer_token
 
 vault_bp = Blueprint("vault_bp", __name__, url_prefix="/api/vault")
 
@@ -62,6 +62,17 @@ def init_vault():
         return jsonify({"message":str(err)}), 400
     finally:
         conn.close()
+
+@vault_bp.route("lock", methods=["POST"])
+def lock_vault():
+    token = get_bearer_token()
+
+    # idempotent: return locked even token does not exist
+    if not token:
+        return jsonify({"ok": True, "locked": True})
+    
+    VaultService.revoke_token(token)
+    return jsonify({"ok": True, "locked":True})
 
 @vault_bp.route("/unlock", methods=["POST"])
 def unlock_vault():

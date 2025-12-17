@@ -13,3 +13,9 @@ def get_unlocked_key_or_401():
         return None, ("Vault locked or invalid token", 401)
     
     return key, None
+
+def get_bearer_token():
+    auth = request.headers.get("Authorization")
+    if not auth or not auth.startswith("Bearer "):
+        return None
+    return auth.removeprefix("Bearer ").strip()
