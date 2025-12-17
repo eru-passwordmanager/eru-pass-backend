@@ -89,6 +89,7 @@ def lock_vault():
 @vault_bp.route("/unlock", methods=["POST"])
 def unlock_vault():
     if not check_rate_limit("vault_unlock"):
+        time.sleep(1.0) # it prevents timing oracle
         return jsonify({
             "error":"Too many attempts. Try again later."
         })
