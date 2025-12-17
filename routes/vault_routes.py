@@ -6,6 +6,7 @@ from db.vault_meta_repo import meta_get, meta_set
 from services.crypto.crypto_service import CryptoService, KdfParams, b64e, b64d
 from services.vault.unlock_store import VaultService
 from services.vault.auth import get_unlocked_key_or_401, get_bearer_token
+from services.security.rate_limit import check_rate_limit
 
 vault_bp = Blueprint("vault_bp", __name__, url_prefix="/api/vault")
 
@@ -76,6 +77,11 @@ def lock_vault():
 
 @vault_bp.route("/unlock", methods=["POST"])
 def unlock_vault():
+    if not check_rate_limit("vault_unlock"):
+        return jsonify({
+            "error":"Too many attempts. Try again later."
+        })
+
     body = request.get_json(silent=True) or {}
     master = body.get("master_password")
 
