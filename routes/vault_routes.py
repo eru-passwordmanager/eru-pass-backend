@@ -7,6 +7,7 @@ from services.crypto.crypto_service import CryptoService, KdfParams, b64e, b64d
 from services.vault.unlock_store import VaultService
 from services.vault.auth import get_unlocked_key_or_401, get_bearer_token
 from services.security.rate_limit import check_rate_limit
+from services.security.password_strength import check_master_password_strength
 
 vault_bp = Blueprint("vault_bp", __name__, url_prefix="/api/vault")
 
@@ -33,6 +34,14 @@ def init_vault():
 
     body = request.get_json(silent=True) or {}
     master = body.get("master_password")
+
+    strength = check_master_password_strength(master)
+    if not strength["ok"]:
+        return jsonify({
+            "error":"Master password to weak",
+            "score": strength["score"],
+            "feedback": strength["feedback"]
+        }), 400
 
     if not master or not isinstance(master, str) or len(master) < 4:
         return jsonify({"error": "master_password required (min 4 chars)"}), 400
@@ -133,6 +142,14 @@ def change_master_password():
     body = request.get_json(silent=True) or {}
     current_master_password = body.get("current_master_password")
     new_master_password = body.get("new_master_password")
+
+    strength = check_master_password_strength(new_master_password)
+    if not strength["ok"]:
+        return jsonify({
+            "error":"New master password too weak",
+            "score": strength["score"],
+            "feedback": strength["feedback"]
+        }), 400
 
     if not current_master_password or not isinstance(current_master_password, str):
         return jsonify({"error": "current_master_password required"}), 400
