@@ -8,6 +8,7 @@ from services.vault.unlock_store import VaultService
 from services.vault.auth import get_unlocked_key_or_401, get_bearer_token
 from services.security.rate_limit import check_rate_limit
 from services.security.password_strength import check_master_password_strength
+from services.security.progressive_backoff import record_failure_and_delay, reset_failures
 
 vault_bp = Blueprint("vault_bp", __name__, url_prefix="/api/vault")
 
@@ -82,6 +83,7 @@ def lock_vault():
         return jsonify({"ok": True, "locked": True})
     
     VaultService.revoke_token(token)
+    reset_failures() # reset fail counter
     return jsonify({"ok": True, "locked":True})
 
 @vault_bp.route("/unlock", methods=["POST"])
@@ -116,10 +118,11 @@ def unlock_vault():
         key = CryptoService.derive_key(master, salt, params)
 
         if not CryptoService.check_verify_blob(key, verify_blob):
+            record_failure_and_delay() # progressive backoff
             return jsonify({"error":"Invalid master password"}), 401
         
         token = VaultService.create_unlock_session(key)
-
+        reset_failures() # fail counter reset
         return jsonify({
             "ok":True,
             "unlocked":True,
