@@ -16,12 +16,16 @@ def create_app():
 
     os.makedirs(app.instance_path, exist_ok=True)
     
-    if not os.path.exists(app.config["VAULT_DB_PATH"]):
-        init_db(app.config["VAULT_DB_PATH"])
+    #if not os.path.exists(app.config["VAULT_DB_PATH"]):
+    init_db(app.config["VAULT_DB_PATH"])
 
     #print("VAULT DB PATH:", app.config["VAULT_DB_PATH"])
 
     from routes.health import health_bp
+    from routes.vault_routes import vault_bp
+    from routes.items.item_routes import items_bp
     app.register_blueprint(health_bp)
+    app.register_blueprint(vault_bp)
+    app.register_blueprint(items_bp)
 
     return app
