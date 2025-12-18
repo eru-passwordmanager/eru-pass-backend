@@ -8,10 +8,14 @@ def create_app():
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(Config)
 
+    app.url_map.strict_slashes = False
+
     CORS(
         app,
         resources={r"/*": {"origins": "http://localhost:5173"}},
         supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     )
 
     os.makedirs(app.instance_path, exist_ok=True)
