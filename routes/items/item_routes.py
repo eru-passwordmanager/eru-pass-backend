@@ -54,10 +54,23 @@ def create_item():
         )
         conn.commit()
 
+        cursor.execute(
+            """
+            SELECT id, type, title
+            FROM vault_items
+            WHERE id = ?
+            """,
+            (item_id,)  
+        )
+
+        row = cursor.fetchone()
+
         return jsonify({
-            "ok":True,
-            "id":item_id
+            "id": row["id"],
+            "type": row["type"],
+            "title": row["title"],
         })
+    
     except ValueError as err:
         return jsonify({"message":str(err)}), 400
     finally:
@@ -235,7 +248,23 @@ def update_item(item_id):
             ),
         )
         conn.commit()
-        return jsonify({"ok":True})
+
+        cursor.execute(
+            """
+            SELECT id, type, title
+            FROM vault_items
+            WHERE id = ?
+            """,
+            (item_id,)  
+        )
+
+        row = cursor.fetchone()
+
+        return jsonify({
+            "id": row["id"],
+            "type": row["type"],
+            "title": row["title"],
+        })
     finally:
         conn.close()
 
