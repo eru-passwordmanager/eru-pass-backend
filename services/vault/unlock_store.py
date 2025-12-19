@@ -4,7 +4,7 @@ from typing import Optional
 
 _UNLOCKED = {} # token -> {key: bytes, last_used: int}
 
-IDLE_TIMEOUT = 60 # seconds
+IDLE_TIMEOUT = 180 # seconds
 
 def _zeroize(buf: bytearray):
         """
