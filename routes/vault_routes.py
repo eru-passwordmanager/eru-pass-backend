@@ -317,4 +317,62 @@ def export_vault():
         )
     finally:
         conn.close()
+    
+@vault_bp.route("/import", methods=["POST"])
+def vault_import():
+    # unlocked vault required
+    _key, err = get_unlocked_key_or_401()
+    if err:
+        msg, code = err
+        return jsonify({"error":msg}), code
+    
+    body = request.get_json(silent=True) or {}
+    dump = body.get("dump")
 
+    if not isinstance(dump, dict):
+        return jsonify({"error":"Invalid dump"}), 400
+    
+    # minimum schema check
+    if "vault_meta" not in dump or "vault_items" not in dump:
+        return jsonify({"error":"Malformed vault dump"}), 400
+    
+    conn = get_conn(current_app.config["VAULT_DB_PATH"])
+    try:
+        cursor = conn.cursor()
+
+        # delete everything (replace)
+        cursor.execute("DELETE FROM vault_items")
+        cursor.execute("DELETE FROM vault_meta")
+
+        # meta restore
+        for k,v in dump["vault_meta"].items():
+            cursor.execute(
+                "INSERT INTO vault_meta (key, value) VALUES (?,?)",
+                (k,v),
+            )
+
+        for item in dump["vault_items"]:
+            cursor.execute(
+                """
+                INSERT INTO vault_items
+                (id, type, title, encrypted_data, created_at, updated_at)
+                VALUES (?,?,?,?,?,?)
+                """,
+                (
+                    item["id"],
+                    item["type"],
+                    item["title"],
+                    item["encrypted_data"],
+                    item["created_at"],
+                    item["updated_at"],
+                ),
+            )
+
+        conn.commit()
+
+        # lock vault after import process
+        VaultService.revoke_all()
+
+        return jsonify({"ok":True, "imported":True})
+    finally:
+        conn.close()
