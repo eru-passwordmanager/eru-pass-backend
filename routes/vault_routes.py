@@ -1,5 +1,6 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, Response, current_app
 import time
+import json
 
 from db.connection import get_conn
 from db.vault_meta_repo import meta_get, meta_set
@@ -235,3 +236,85 @@ def change_master_password():
         return jsonify({"error":"Master password change failed","detail": str(e)}), 500
     finally:
         conn.close()
+
+@vault_bp.route("/export", methods=["POST"])
+def export_vault():
+    # unlocked vault required
+    _key, err = get_unlocked_key_or_401()
+    if err:
+        msg, code = err
+        return jsonify({"error":msg}), code
+    
+    body = request.get_json(silent=True) or {}
+    export_password = body.get("export_password") # optional
+
+    conn = get_conn(current_app.config["VAULT_DB_PATH"])
+    try:
+        cursor = conn.cursor()
+
+        # read meta
+        cursor.execute("SELECT key, value FROM vault_meta")
+        meta_rows = cursor.fetchall()
+        meta = {row["key"]: row["value"] for row in meta_rows}
+
+        # read items (it's already encrypted)
+        cursor.execute("""
+            SELECT id, type, title, encrypted_data, created_at, updated_at
+            FROM vault_items
+            ORDER BY updated_at DESC
+        """)
+
+        item_rows = cursor.fetchall()
+        items = [
+            {
+                "id":r["id"],
+                "type": r["type"],
+                "title": r["title"],
+                "encrypted_data": r["encrypted_data"],
+                "created_at": r["created_at"],
+                "updated_at": r["updated_at"],
+            }
+            for r in item_rows
+        ]
+
+        dump = {
+            "export_version": 1,
+            "exported_at": int(time.time()),
+            "vault_meta": meta,
+            "vault_items": items,
+        }
+
+        # if export_password exists also encrypt all dump
+        if export_password and isinstance(export_password, str) and len(export_password) >= 8:
+            params = KdfParams()
+            salt = CryptoService.generate_salt(16)
+            export_key = CryptoService.derive_key(export_password, salt, params)
+
+            plaintext = json.dumps(dump).encode("utf-8")
+            blob = CryptoService.encrypt_to_string(export_key, plaintext, aad=b"export:v1")
+
+            wrapped = {
+                "wrapped":True,
+                "kdf_salt": b64e(salt),
+                "kdf_n": params.n,
+                "kdf_r": params.r,
+                "kdf_p": params.p,
+                "kdf_len": params.length,
+                "aad":"export:v1",
+                "blob":blob,
+            }
+            
+            return jsonify(wrapped)
+        
+        # if export_password does not exists, return raw json
+        raw_json = json.dumps(dump, ensure_ascii=False, indent=2)
+        return Response(
+            raw_json,
+            mimetype="application/json",
+            headers={
+                "Content-Disposition":'attachment; filename="vault-export.json"'
+            },
+        )
+    finally:
+        conn.close()
+
