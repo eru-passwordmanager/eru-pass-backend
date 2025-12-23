@@ -1,7 +1,3 @@
-﻿# eru-pass-backend
-
----
-
 # EruPass Backend: Secure Vault Storage System
 
 EruPass is a robust, security-focused **Flask** backend designed for encrypted data storage. It implements modern cryptographic standards and defensive programming techniques to protect sensitive information against unauthorized access and common attack vectors.
@@ -71,4 +67,5 @@ EruPass, hassas verilerin depolanması için **Flask** tabanlı, modern kriptogr
 ---
 
 **Analoji:** Bu sistemi, dijital bir **banka kasasına** benzetebiliriz. Sadece doğru anahtara (parola) sahip olmanız yetmez; aynı zamanda kasanın güvenlik görevlisi (Rate Limiter) çok hızlı deneme yapmanızı engeller ve kasa kapağı (Memory Zeroization) siz işlem yapmayı bıraktığınızda güvenliğiniz için otomatik olarak kapanır.
+
 
