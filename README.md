@@ -47,13 +47,13 @@ EruPass, hassas verilerin depolanması için **Flask** tabanlı, modern kriptogr
 
 ---
 
-## 📊 Database Schema (SQLite)
+## Database Schema (SQLite)
 
 *   **`vault_items`:** Stores encrypted blobs with UUIDs and timestamps.
 *   **`vault_meta`:** Key-value store for KDF parameters (salt, $N$, $r$, $p$) and the verify blob using **UPSERT** operations.
 *   **`vault_types`:** Pre-defined categories (web, email, ssh, note).
 
-## 💻 API Integration
+## API Integration
 
 | Endpoint | Method | Security | Description |
 | :--- | :--- | :--- | :--- |
@@ -67,6 +67,7 @@ EruPass, hassas verilerin depolanması için **Flask** tabanlı, modern kriptogr
 ---
 
 **Analoji:** Bu sistemi, dijital bir **banka kasasına** benzetebiliriz. Sadece doğru anahtara (parola) sahip olmanız yetmez; aynı zamanda kasanın güvenlik görevlisi (Rate Limiter) çok hızlı deneme yapmanızı engeller ve kasa kapağı (Memory Zeroization) siz işlem yapmayı bıraktığınızda güvenliğiniz için otomatik olarak kapanır.
+
 
 
 
