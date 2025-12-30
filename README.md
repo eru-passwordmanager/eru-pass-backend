@@ -2,7 +2,7 @@
 
 EruPass is a robust, security-focused **Flask** backend designed for encrypted data storage. It implements modern cryptographic standards and defensive programming techniques to protect sensitive information against unauthorized access and common attack vectors.
 
-## 🚀 Key Technical Features
+## Key Technical Features
 
 ### 1. Cryptographic Architecture
 *   **Authenticated Encryption:** Uses **AES-GCM (v1)** to ensure data confidentiality and integrity. It supports **Additional Authenticated Data (AAD)** to bind encrypted items to their specific contexts (e.g., item types).
@@ -27,7 +27,7 @@ EruPass is a robust, security-focused **Flask** backend designed for encrypted d
 
 EruPass, hassas verilerin depolanması için **Flask** tabanlı, modern kriptografik standartları ve savunma mekanizmalarını temel alan bir arka uç uygulamasıdır.
 
-## 🛠 Teknik Özellikler
+## Teknik Özellikler
 
 ### 1. Kriptografik Yapı
 *   **Doğrulanmış Şifreleme:** Veri gizliliği ve bütünlüğü için **AES-GCM (v1)** kullanılır. **Ek Doğrulanmış Veri (AAD)** desteği ile şifrelenmiş veriler belirli bağlamlara (örneğin veri tipi) bağlanır.
@@ -67,5 +67,6 @@ EruPass, hassas verilerin depolanması için **Flask** tabanlı, modern kriptogr
 ---
 
 **Analoji:** Bu sistemi, dijital bir **banka kasasına** benzetebiliriz. Sadece doğru anahtara (parola) sahip olmanız yetmez; aynı zamanda kasanın güvenlik görevlisi (Rate Limiter) çok hızlı deneme yapmanızı engeller ve kasa kapağı (Memory Zeroization) siz işlem yapmayı bıraktığınızda güvenliğiniz için otomatik olarak kapanır.
+
 
 
